@@ -4,6 +4,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -123,6 +124,10 @@ func TestASubnetIsLeftOutWhereItMustBe(t *testing.T) {
 		{"partly the host's", -1, true, nil, prefixList("192.168.50.128/25"), prefixList("192.168.50.0/25"),
 			"but for 192.168.50.128/25"},
 	} {
+		if runtime.GOOS == "darwin" && onNetworkIn(netip.MustParsePrefix("192.168.50.0/24"), tc.host) {
+			// On macOS a host on a network inside the subnet keeps all of it.
+			tc.want, tc.why = nil, "this device is on a network inside it"
+		}
 		t.Run(tc.name, func(t *testing.T) {
 			f := subnetFixture(t, 1, tc.admin, prefixList("192.168.50.0/24"), tc.mutate)
 			f.mgr.mu.Lock()
