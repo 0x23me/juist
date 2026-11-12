@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"net/netip"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -94,6 +95,8 @@ func (d *Daemon) planSubnets(s snapshot, fresh bool, held map[types.Identity]gos
 				r.Why = "its router " + errNotPQ
 			case len(parts) == 0:
 				r.Why = "the access policy passes none of it to this device"
+			case runtime.GOOS == "darwin" && onNetworkIn(pfx, host):
+				r.Why = "this device is on a network inside it"
 			default:
 				var left, kept, wider []netip.Prefix
 				for _, part := range parts {
@@ -126,6 +129,16 @@ func (d *Daemon) planSubnets(s snapshot, fresh bool, held map[types.Identity]gos
 		return types.ComparePrefix(x.Prefix, y.Prefix)
 	})
 	return p
+}
+
+// onNetworkIn reports whether a network the host is on lies in pfx. A laptop
+// on one of a site's networks reaches the rest of that site by its gateway
+// there, so the whole subnet is left to the host; macOS alone, where the
+// host's routes are the networks it is attached to.
+func onNetworkIn(pfx netip.Prefix, host []netip.Prefix) bool {
+	return slices.ContainsFunc(host, func(h netip.Prefix) bool {
+		return h.Bits() >= pfx.Bits() && pfx.Contains(h.Addr())
+	})
 }
 
 // without is pfx less what host routes of it, what of pfx they do, and the
