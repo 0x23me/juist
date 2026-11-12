@@ -513,6 +513,14 @@ type PeerReach struct {
 	// of [Tunnels.OlderBuild].
 	Outdated   bool `cbor:"9,keyasint,omitempty"`
 	OlderBuild bool `cbor:"10,keyasint,omitempty"`
+
+	// Handshake is when the tunnel's last handshake completed, in Unix
+	// seconds, 0 for none, and RxBytes and TxBytes what it carried since
+	// juistd started; read when the status is asked for, and only when the
+	// request asks for them ([Request.Figures]). A macOS patch.
+	Handshake int64  `cbor:"100,keyasint,omitempty"`
+	RxBytes   uint64 `cbor:"101,keyasint,omitempty"`
+	TxBytes   uint64 `cbor:"102,keyasint,omitempty"`
 }
 
 // A Device is a member as the log lists it.

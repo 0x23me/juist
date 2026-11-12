@@ -249,6 +249,11 @@ type Request struct {
 	// Ping is the member a [CmdPing] pings.
 	Ping types.Identity `cbor:"31,keyasint,omitempty"`
 
+	// Figures asks a [CmdStatus] for each peer's handshake and traffic in
+	// [PeerReach]. A macOS patch: its keys stay off the answer unless asked
+	// for, as a stock juist refuses fields it does not know.
+	Figures bool `cbor:"100,keyasint,omitempty"`
+
 	// HTTPSOnly, Proxy and RelayName are what a [CmdSettings] sets: whether
 	// this device sends nothing but TLS to relays on 443, the HTTP proxy it
 	// reaches them through, "" for its environment's, and the public name
@@ -686,6 +691,7 @@ const (
 	fPing
 	fListening // Listening and Unbound
 	fSettings  // HTTPSOnly, Proxy, RelayName, DNS, Multicast and Groups
+	fFigures
 )
 
 // present lists the optional fields r sets.
@@ -706,7 +712,7 @@ func (r *Request) present() reqField {
 		{r.Account != nil || len(r.NoCert) > 0 || r.Stopping, fAccount},
 		{len(r.Listening) > 0 || len(r.Unbound) > 0, fListening},
 		{r.Share != nil, fShare}, {!r.Ping.IsZero(), fPing},
-		{r.Settings(), fSettings},
+		{r.Settings(), fSettings}, {r.Figures, fFigures},
 	} {
 		if p.set {
 			f |= p.f
@@ -725,7 +731,7 @@ type requestShape struct {
 }
 
 var requestShapes = map[Command]requestShape{
-	CmdStatus:  {name: "status"},
+	CmdStatus:  {name: "status", takes: fFigures},
 	CmdLog:     {name: "log", takes: fOrphans},
 	CmdSelf:    {name: "self"},
 	CmdUnstage: {name: "unstage"},
